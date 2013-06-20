@@ -22,6 +22,7 @@ package org.bootchart.parser.linux;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.logging.Logger;
 
@@ -37,7 +38,6 @@ import org.bootchart.common.Stats;
  * softirq.
  */
 public class ProcStatParser {
-	private static final Logger log = Logger.getLogger(ProcStatParser.class.getName());
 
 	/**
 	 * Parses the <code>proc_stat.log</code> file.  The output from
@@ -46,17 +46,21 @@ public class ProcStatParser {
 	 * @param is            the input stream to read from
 	 * @return              CPU statistics ({@link CPUSample} samples)
 	 * @throws IOException  if an I/O error occurs
+	private static final Logger log = Logger.getLogger(ProcStatParser.class.getName());
 	 */
-	public static Stats parseLog(InputStream is)
+	public static ArrayList<Stats> parseLog(InputStream is)
 		throws IOException {
 		BufferedReader reader = Common.getReader(is);
 		String line = reader.readLine();
+		String cupId = null;
 
 		int numSamples = 0;
-		Stats cpuStats = new Stats();
+		
+		ArrayList<Stats> cpuStatsList = new ArrayList<Stats>();
 		
 		// CPU times {user, nice, system, idle, io_wait, irq, softirq}
-		long[] ltimes = null;
+		int numberOfCpu = 0;
+		long[][] ltimes = null;
 		
 		while (line != null) {
 			// skip empty lines
@@ -71,47 +75,59 @@ public class ProcStatParser {
 			if (line.startsWith("#")) {
 				continue;
 			}
-			Date time = null;
-			if (line.matches("^\\d+$")) {
-				time = new Date(Long.parseLong(line) * 10);
-				numSamples++;
-			} else {
-				line = reader.readLine();
-				continue;
-			}
-			line = reader.readLine();
-			String[] tokens = line.split("\\s+");
-			// {user, nice, system, idle, io_wait, irq, softirq}
-			long[] times = new long[7];
-			for (int i=1; i<tokens.length; i++) {
-				if (i - 1 < times.length) {
-					times[i - 1] = Long.parseLong(tokens[i]);
-				}
-			}
-			if (ltimes != null) {
-				// user + nice
-				long user = (times[0] + times[1]) - (ltimes[0] + ltimes[1]);
-				// system + irq + softirq
-				long system = (times[2] + times[5] + times[6]) -
-				              (ltimes[2] + ltimes[5] + ltimes[6]);
-				long idle = times[3] - ltimes[3];
-				long iowait = times[4] - ltimes[4];
-				double sum = user + system + idle + iowait;
-				sum = Math.max(sum, 1); // avoid an ArithmeticException
-				CPUSample sample =
-					new CPUSample(time, user/sum, system/sum, iowait/sum);
-				cpuStats.addSample(sample);
-			}
-			ltimes = times;
-			if (numSamples > Common.MAX_PARSE_SAMPLES) {
-				break;
+			//ericzha add an arry of cupId here to make sure it works with mutilple cores 
+			
+			while (line.startsWith("cpu"))
+			{
+				    Stats cpuStats = new Stats();
+				    cpuStatsList.add(cpuStats);
+					Date time = null;
+					if (line.matches("^\\d+$")) {
+						time = new Date(Long.parseLong(line) * 10);
+						numSamples++;
+					} else {
+						line = reader.readLine();
+						continue;
+					}
+					line = reader.readLine();
+					String[] tokens = line.split("\\s+");
+					// {user, nice, system, idle, io_wait, irq, softirq}
+					long[] times = new long[7];
+					for (int i=1; i<tokens.length; i++) {
+						if (i - 1 < times.length) {
+							times[i - 1] = Long.parseLong(tokens[i]);
+						}
+					}
+					if (ltimes != null) {
+						// user + nice
+						long user = (times[0] + times[1]) - (ltimes[0] + ltimes[1]);
+						// system + irq + softirq
+						long system = (times[2] + times[5] + times[6]) -
+						              (ltimes[2] + ltimes[5] + ltimes[6]);
+						long idle = times[3] - ltimes[3];
+						long iowait = times[4] - ltimes[4];
+						double sum = user + system + idle + iowait;
+						sum = Math.max(sum, 1); // avoid an ArithmeticException
+						CPUSample sample =
+							new CPUSample(time, user/sum, system/sum, iowait/sum);
+						cpuStatsList.get(numberOfCpu).addSample(sample);
+					}
+					ltimes[numberOfCpu++] = times;
+					if (numSamples > Common.MAX_PARSE_SAMPLES) {
+						break;
+					}
+					
+					
 			}
 			// skip the rest of statistics lines
 			while (line != null && line.trim().length() > 0) {
 				line = reader.readLine();
 			}
+			numberOfCpu = 0; //reset to deal with the next block of log data
+			
 		}
 		log.fine("Parsed " + cpuStats.getSamples().size() + " /proc/stat samples");
-		return cpuStats;
+		return cpuStatsList;
+		
 	}
 }

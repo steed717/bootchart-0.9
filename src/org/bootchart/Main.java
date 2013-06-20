@@ -195,7 +195,7 @@ public class Main {
 		Properties headers = new Properties();
 		Map pidNameMap = null;
 		Map forkMap = null;
-		Stats cpuStats = null;
+		ArrayList<Stats> cpuStatsList = null;
 		Stats diskStats = null;
 		PsStats psStats = null;
 		BootStats bootStats = null;
@@ -245,7 +245,7 @@ public class Main {
 				
 			} else if (logName.equals("proc_stat.log")) {
 				// read the /proc/stat log file
-				cpuStats =  ProcStatParser.parseLog(is);
+				cpuStatsList =  ProcStatParser.parseLog(is);
 				
 			} else if (logName.equals("proc_diskstats.log")) {
 				// read the /proc/diskstats log file
@@ -288,7 +288,7 @@ public class Main {
 				}
 			}
 			//log.fine(procTree.toString());
-			bootStats = new BootStats(cpuStats, diskStats, procTree);
+			bootStats = new BootStats(cpuStatsList, diskStats, procTree);
 		}
 		
 		Renderer renderer = null;

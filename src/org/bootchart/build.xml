@@ -34,7 +34,8 @@ This is the bootchart build file, to be used with the Apache Ant build tool.
 		<!-- compile libraries -->
 		<javac srcdir="${lib.home}"
 			destdir="${build.home}"
-			nowarn="true"
+			nowarn="${compiler.nowarn}"
+			debug="true"
 			optimize="${compiler.optimize}"
 			deprecation="${compiler.deprecation}"
 			classpath="${build.home}">
@@ -44,7 +45,8 @@ This is the bootchart build file, to be used with the Apache Ant build tool.
 		<javac srcdir="${src.home}"
 			destdir="${build.home}"
 			nowarn="${compiler.nowarn}"
-			debug="${compiler.debug}"
+			debug="true"
+			debuglevel="lines,vars,source"
 			optimize="${compiler.optimize}"
 			deprecation="${compiler.deprecation}"
 			classpath="${build.home}">
@@ -89,9 +91,12 @@ This is the bootchart build file, to be used with the Apache Ant build tool.
 	</target>
 	
 	<!-- Test -->
-	<target name="test" depends="jar" description="Test">
-		<java classname="org.bootchart.Main" classpath="${jar.name}">
+	<target name="test" depends="jar" description="Test" >
+		<java classname="org.bootchart.Main" classpath="${jar.name}" fork="true">
+			  <jvmarg value="-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=5432" />
+			<!-- ericzha http://stackoverflow.com/questions/2406825/how-to-debug-java-code-when-using-ant-script-in-eclipse -->
 			<arg line="./examples/"/>
+			
 		</java>
 	</target>
 	

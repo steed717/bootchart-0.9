@@ -19,13 +19,14 @@
  */
 package org.bootchart.common;
 
+
 /**
  * BootStats encapsulates boot statistics.  This includes global CPU and
  * disk I/O statistics and a process tree with process accounting.
  */
 public class BootStats {
 	/** CPU statistics.*/
-	public Stats cpuStats;
+	public ArrayList<Stats> cpuStatsList;
 	/** Disk I/O utilization and throughput statistics.*/
 	public Stats diskStats;
 	/** The process tree.*/
@@ -38,8 +39,8 @@ public class BootStats {
 	 * @param diskStats  disk utilization and throughput I/O statistics
 	 * @param procTree   the process tree
 	 */
-	public BootStats(Stats cpuStats, Stats diskStats, ProcessTree procTree) {
-		this.cpuStats = cpuStats;
+	public BootStats(ArrayList<Stats> cpuStatsList, Stats diskStats, ProcessTree procTree) {
+		this.cpuStatsList = cpuStatsList;
 		this.diskStats = diskStats;
 		this.procTree = procTree;
 	}
